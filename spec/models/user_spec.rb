@@ -22,6 +22,11 @@ RSpec.describe User, type: :model do
       subject.email = "user1@example.com"
       expect(subject).to_not be_valid
     end
+
+    it "is not valid if email has wrong format" do
+      subject.email = "user1.com"
+      expect(subject).to_not be_valid
+    end
   end
 
   describe "Associations" do
