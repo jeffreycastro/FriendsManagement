@@ -25,10 +25,15 @@ RSpec.describe Friendship, type: :model do
     it "is not valid if the user is already friends with the other user" do
       user1 = create(:user, email: "user1@test.com")
       user2 = create(:user, email: "user2@test.com")
-      friendship_bet_1_and_2 = Friendship.create(user_id: 1, friend_id: 2)
+      friendship_bet_1_and_2 = Friendship.create(user_id: user1.id, friend_id: user2.id)
 
       expect(Friendship.new(user_id: user1.id, friend_id: user2.id)).to_not be_valid
       expect(Friendship.new(user_id: user2.id, friend_id: user1.id)).to_not be_valid
+    end
+
+    it "is not valid if the user is befriending itself" do
+      user1 = create(:user)
+      expect(Friendship.new(user_id: user1.id, friend_id: user1.id)).to_not be_valid
     end
   end
 
