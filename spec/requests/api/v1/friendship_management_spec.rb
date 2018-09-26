@@ -178,6 +178,11 @@ RSpec.describe 'FriendshipManagement API v1', type: :request do
       let!(:user1) { create(:user, email: "user1@example.com") }
       let!(:friends_list_params) {{ email: user1.email }}
 
+      it "calls on the FriendshipManagement::FriendsList service" do
+        expect(FriendshipManagement::FriendsList).to receive(:new).and_call_original
+        get "/api/v1/friendship_management/friends_list", params: friends_list_params
+      end
+
       context "given email address does not have User record yet" do
         let!(:friends_list_params_2) {{ email: "someotheremail@example.com" }}
 
