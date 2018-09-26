@@ -84,4 +84,6 @@ RSpec.configure do |config|
       example.run
     end
   end
+
+  RSpec::Matchers.define_negated_matcher :not_change, :change
 end
