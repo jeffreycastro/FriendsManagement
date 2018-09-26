@@ -27,6 +27,20 @@ class Api::V1::FriendshipManagementController < ApplicationController
     end
   end
 
+  # GET /api/v1/friendship_management/common_friends_list
+  def common_friends_list
+    return render json: { success: false, messages: ["Invalid parameters given"] }, status: :bad_request if common_friends_list_params.blank?
+
+    service = FriendshipManagement::CommonFriendsList.new(common_friends_list_params)
+    service.run
+
+    if service.errors.any?
+      render json: { success: false, messages: service.errors }, status: :bad_request
+    else
+      render json: { success: true, friends: service.common_friends_list, count: service.common_friends_list.count }, status: :ok
+    end
+  end
+
   private
 
   def connect_friends_params
@@ -35,5 +49,9 @@ class Api::V1::FriendshipManagementController < ApplicationController
 
   def friends_list_params
     params.permit(:email)
+  end
+
+  def common_friends_list_params
+    params.permit(friends: [])
   end
 end

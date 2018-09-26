@@ -235,4 +235,88 @@ RSpec.describe 'FriendshipManagement API v1', type: :request do
       end
     end
   end
+
+  # Test suite for GET /api/v1/friendship_management/common_friends_list
+  describe 'GET /api/v1/friendship_management/common_friends_list' do
+    context "invalid request" do
+      context "no parameters given" do
+        before(:each) do
+          get "/api/v1/friendship_management/common_friends_list", params: {}
+        end
+
+        it "renders status code for :bad_request" do
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it "returns the correct json response" do
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("Invalid parameters given")
+        end
+      end
+    end
+
+    context "valid request" do
+      let!(:user1) { create(:user, email: "user1@example.com") }
+      let!(:user2) { create(:user, email: "user2@example.com") }
+      let!(:common) { create(:user, email: "common@example.com") }
+      let!(:common_friends_list_params) {{ friends: [user1.email, user2.email] }}
+
+      it "calls on the FriendshipManagement::CommonFriendsList service" do
+        expect(FriendshipManagement::CommonFriendsList).to receive(:new).and_call_original
+        get "/api/v1/friendship_management/common_friends_list", params: common_friends_list_params
+      end
+
+      context "valid emails given" do
+        it "returns status code for :ok" do
+          get "/api/v1/friendship_management/common_friends_list", params: common_friends_list_params
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "returns the correct json response" do
+          get "/api/v1/friendship_management/common_friends_list", params: common_friends_list_params
+          expect(JSON.parse(response.body)["success"]).to eq(true)
+          expect(JSON.parse(response.body)["friends"]).to eq([])
+          expect(JSON.parse(response.body)["count"]).to eq(0)
+
+          create(:friendship, user: user1, friend: common)
+          create(:friendship, user: user2, friend: common)
+          get "/api/v1/friendship_management/common_friends_list", params: common_friends_list_params
+          expect(JSON.parse(response.body)["success"]).to eq(true)
+          expect(JSON.parse(response.body)["friends"]).to include(common.email)
+          expect(JSON.parse(response.body)["count"]).to eq(1)
+        end
+      end
+
+      context "duplicate emails given" do
+        let!(:common_friends_list_params_2) {{ friends: [user1.email, user1.email] }}
+
+        it "returns status code for :bad_request" do
+          get "/api/v1/friendship_management/common_friends_list", params: common_friends_list_params_2
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it "returns the correct json response" do
+          get "/api/v1/friendship_management/common_friends_list", params: common_friends_list_params_2
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("Duplicate emails given")
+        end
+      end
+
+      context "given email address does not have User record yet" do
+        let!(:common_friends_list_params_2) {{ friends: ["other1@example.com", "other2@example.com"] }}
+
+        it "returns status code for :bad_request" do
+          get "/api/v1/friendship_management/common_friends_list", params: common_friends_list_params_2
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it "returns the correct json response" do
+          get "/api/v1/friendship_management/common_friends_list", params: common_friends_list_params_2
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("User with given first email not found")
+          expect(JSON.parse(response.body)["messages"]).to include("User with given second email not found")
+        end
+      end
+    end
+  end
 end
