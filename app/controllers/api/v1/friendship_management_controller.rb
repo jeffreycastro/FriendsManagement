@@ -3,18 +3,13 @@ class Api::V1::FriendshipManagementController < ApplicationController
   def connect_friends
     return render json: { success: false, messages: ["Invalid parameters given"] }, status: :bad_request if connect_friends_params.blank?
 
-    errors = []
-    user1 = User.find_or_create_by(email: connect_friends_params[:friends].first)
-    user2 = User.find_or_create_by(email: connect_friends_params[:friends].last)
-    errors << user1.errors.full_messages unless user1.persisted?
-    errors << user2.errors.full_messages unless user2.persisted?
+    service = FriendshipManagement::ConnectFriends.new(connect_friends_params)
+    service.run
 
-    friendship = Friendship.new(user_id: user1.try(:id), friend_id: user2.try(:id))
-    if friendship.save
+    if service.friendship.persisted?
       render json: { success: true }, status: :ok
     else
-      errors << friendship.errors.full_messages
-      render json: { success: false, messages: errors.flatten }, status: :unprocessable_entity
+      render json: { success: false, messages: service.flat_errors }, status: :unprocessable_entity
     end
   end
 
