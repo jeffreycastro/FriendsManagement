@@ -27,6 +27,11 @@ RSpec.describe 'FriendshipManagement API v1', type: :request do
     context "valid request" do
       let!(:connect_friends_params) {{ friends: ["user1@example.com", "user2@example.com"] }}
 
+      it "calls on the FriendshipManagement::ConnectFriends service" do
+        expect(FriendshipManagement::ConnectFriends).to receive(:new).and_call_original
+        post '/api/v1/friendship_management/connect_friends', params: connect_friends_params
+      end
+
       context "given email addresses are not yet friends" do
         it "connects them by creating a Friendship record" do
           expect {
