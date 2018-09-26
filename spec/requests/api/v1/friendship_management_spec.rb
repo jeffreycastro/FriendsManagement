@@ -139,4 +139,95 @@ RSpec.describe 'FriendshipManagement API v1', type: :request do
       end
     end
   end
+
+  # Test suite for GET /api/v1/friendship_management/friends_list
+  describe 'GET /api/v1/friendship_management/friends_list' do
+    context "invalid request" do
+      context "no parameters given" do
+        before(:each) do
+          get "/api/v1/friendship_management/friends_list", params: {}
+        end
+
+        it "renders status code for :bad_request" do
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it "returns the correct json response" do
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("Invalid parameters given")
+        end
+      end
+
+      context "no email address given" do
+        before(:each) do
+          get "/api/v1/friendship_management/friends_list", params: { email: "" }
+        end
+
+        it "renders status code for :bad_request" do
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it "returns the correct json response" do
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("Invalid parameters given")
+        end
+      end
+    end
+
+    context "valid request" do
+      let!(:user1) { create(:user, email: "user1@example.com") }
+      let!(:friends_list_params) {{ email: user1.email }}
+
+      context "given email address does not have User record yet" do
+        let!(:friends_list_params_2) {{ email: "someotheremail@example.com" }}
+
+        it "returns status code for :not_found" do
+          get "/api/v1/friendship_management/friends_list", params: friends_list_params_2
+          expect(response).to have_http_status(:not_found)
+        end
+
+        it "returns the correct json response" do
+          get "/api/v1/friendship_management/friends_list", params: friends_list_params_2
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("User with given email does not exist")
+        end
+      end
+
+      context "given email address does not have friends yet" do
+        it "returns status code for :ok" do
+          get "/api/v1/friendship_management/friends_list", params: friends_list_params
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "returns the correct json response" do
+          get "/api/v1/friendship_management/friends_list", params: friends_list_params
+          expect(JSON.parse(response.body)["success"]).to eq(true)
+          expect(JSON.parse(response.body)["friends"]).to eq([])
+          expect(JSON.parse(response.body)["count"]).to eq(0)
+        end
+      end
+
+      context "given email address has friends" do
+        let!(:user2) { create(:user, email: "user2@example.com") }
+        let!(:user3) { create(:user, email: "user3@example.com") }
+        before(:each) do
+          create(:friendship, user: user1, friend: user2)
+          create(:friendship, user: user3, friend: user1)
+        end
+
+        it "returns status code for :ok" do
+          get "/api/v1/friendship_management/friends_list", params: friends_list_params
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "returns the correct json response" do
+          get "/api/v1/friendship_management/friends_list", params: friends_list_params
+          expect(JSON.parse(response.body)["success"]).to eq(true)
+          expect(JSON.parse(response.body)["friends"]).to include(user2.email)
+          expect(JSON.parse(response.body)["friends"]).to include(user3.email)
+          expect(JSON.parse(response.body)["count"]).to eq(2)
+        end
+      end
+    end
+  end
 end
