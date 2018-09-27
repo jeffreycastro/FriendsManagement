@@ -48,5 +48,15 @@ RSpec.describe Friendship, type: :model do
   end
 
   describe "Methods" do
+    describe "#friend_email" do
+      it "returns the friend's email" do
+        user1 = create(:user, email: "user1@test.com")
+        user2 = create(:user, email: "user2@test.com")
+        friendship_bet_1_and_2 = Friendship.create(user_id: user1.id, friend_id: user2.id)
+
+        expect(friendship_bet_1_and_2.friend_email(user1.id)).to eq(user2.email)
+        expect(friendship_bet_1_and_2.friend_email(user2.id)).to eq(user1.email)
+      end
+    end
   end
 end
