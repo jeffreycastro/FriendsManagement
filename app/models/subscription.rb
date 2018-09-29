@@ -7,7 +7,7 @@ class Subscription < ApplicationRecord
 
   def not_yet_subscribed
     return if requestor_id.nil? || target_id.nil?
-    sql_query = "(requestor_id = #{requestor_id} AND target_id = #{target_id}) OR (requestor_id = #{target_id} AND target_id = #{requestor_id})"
+    sql_query = "(requestor_id = #{requestor_id} AND target_id = #{target_id})"
     errors.add(:base, "already subscribed!") if Subscription.where(sql_query).exists?
   end
 
