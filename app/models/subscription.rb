@@ -2,7 +2,7 @@ class Subscription < ApplicationRecord
   belongs_to :requestor, class_name: "User"
   belongs_to :target, class_name: "User"
 
-  validate :not_yet_subscribed
+  validate :not_yet_subscribed, on: :create
   validate :not_subscribing_to_self
 
   scope :blocked, ->{ where(blocked: true) }
@@ -15,6 +15,6 @@ class Subscription < ApplicationRecord
 
   def not_subscribing_to_self
     return if requestor_id.nil? || target_id.nil?
-    errors.add(:base, "cannot subscribe to self!") if requestor_id == target_id
+    errors.add(:base, "cannot #{blocked ? 'block' : 'subscribe to'} self!") if requestor_id == target_id
   end
 end
