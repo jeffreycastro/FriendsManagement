@@ -35,6 +35,24 @@ RSpec.describe Friendship, type: :model do
       user1 = create(:user)
       expect(Friendship.new(user_id: user1.id, friend_id: user1.id)).to_not be_valid
     end
+
+    context "not_blocked" do
+      it "is not valid if the user is blocked by the target friend" do
+        user1 = create(:user, email: "user1@test.com")
+        user2 = create(:user, email: "user2@test.com")
+        create(:blocked_subscription, requestor: user2, target: user1)
+
+        expect(Friendship.new(user_id: user1.id, friend_id: user2.id)).to_not be_valid
+      end
+
+      it "is not valid if the user has blocked the target friend" do
+        user1 = create(:user, email: "user1@test.com")
+        user2 = create(:user, email: "user2@test.com")
+        create(:blocked_subscription, requestor: user1, target: user2)
+
+        expect(Friendship.new(user_id: user1.id, friend_id: user2.id)).to_not be_valid
+      end
+    end
   end
 
   describe "Associations" do

@@ -4,6 +4,7 @@ class Friendship < ApplicationRecord
 
   validate :not_yet_friends
   validate :not_befriending_self
+  validate :not_blocked
 
   scope :friends_list, ->(asking_user_id) { where("user_id = :id OR friend_id = :id", id: asking_user_id) }
 
@@ -16,6 +17,12 @@ class Friendship < ApplicationRecord
   def not_befriending_self
     return if user_id.nil? || friend_id.nil?
     errors.add(:base, "cannot befriend self!") if user_id == friend_id
+  end
+
+  def not_blocked
+    return if user_id.nil? || friend_id.nil?
+    sql_query = "(requestor_id = #{user_id} AND target_id = #{friend_id}) OR (requestor_id = #{friend_id} AND target_id = #{user_id})"
+    errors.add(:base, "blocked from adding as friend!") if Subscription.blocked.where(sql_query).exists?
   end
 
   def friend_email(asking_user_id)
