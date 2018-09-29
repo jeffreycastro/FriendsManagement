@@ -615,4 +615,85 @@ RSpec.describe 'FriendshipManagement API v1', type: :request do
       end
     end
   end
+
+  # Test suite for GET /api/v1/friendship_management/recipients_list
+  describe 'GET /api/v1/friendship_management/recipients_list' do
+    context "invalid request" do
+      context "no parameters given" do
+        before(:each) do
+          get "/api/v1/friendship_management/recipients_list", params: {}
+        end
+
+        it "renders status code for :bad_request" do
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it "returns the correct json response" do
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("Invalid parameters given")
+        end
+      end
+
+      context "no email address given" do
+        before(:each) do
+          get "/api/v1/friendship_management/recipients_list", params: { sender: "", text: "" }
+        end
+
+        it "renders status code for :bad_request" do
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it "returns the correct json response" do
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("Invalid parameters given")
+        end
+      end
+    end
+
+    context "valid request" do
+      let!(:user1) { create(:user, email: "user1@example.com") }
+      let!(:recipients_list_params) {{ sender: user1.email, text: "" }}
+
+      it "calls on the FriendshipManagement::RecipientsList service" do
+        expect(FriendshipManagement::RecipientsList).to receive(:new).and_call_original
+        get "/api/v1/friendship_management/recipients_list", params: recipients_list_params
+      end
+
+      context "given email address does not have User record yet" do
+        let!(:recipients_list_params_2) {{ sender: "someotheremail@example.com" }}
+
+        it "returns status code for :not_found" do
+          get "/api/v1/friendship_management/recipients_list", params: recipients_list_params_2
+          expect(response).to have_http_status(:not_found)
+        end
+
+        it "returns the correct json response" do
+          get "/api/v1/friendship_management/recipients_list", params: recipients_list_params_2
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("User with given email does not exist")
+        end
+      end
+
+      context "given email address is valid" do
+        let!(:user2) { create(:user, email: "user2@example.com") }
+        let!(:user3) { create(:user, email: "user3@example.com") }
+        let!(:recipients_list_params_3) {{ sender: user1.email, text: "" }}
+
+        it "returns status code for :ok" do
+          get "/api/v1/friendship_management/recipients_list", params: recipients_list_params_3
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "returns the correct json response" do
+          create(:friendship, user: user1, friend: user2)
+          create(:subscription, requestor: user3, target: user1)
+          create(:blocked_subscription, requestor: user2, target: user1)
+
+          get "/api/v1/friendship_management/recipients_list", params: recipients_list_params_3.merge(text: "Hello kate@example.com test@example.com")
+          expect(JSON.parse(response.body)["success"]).to eq(true)
+          expect(JSON.parse(response.body)["recipients"]).to eq([user3.email, "kate@example.com", "test@example.com"])
+        end
+      end
+    end
+  end
 end

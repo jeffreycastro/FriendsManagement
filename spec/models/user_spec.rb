@@ -48,5 +48,49 @@ RSpec.describe User, type: :model do
   end
 
   describe "Methods" do
+    describe "#recipients_list" do
+      let!(:user1) { create(:user, email: "user1@example.com") }
+      let!(:user2) { create(:user, email: "user2@example.com") }
+      let!(:user3) { create(:user, email: "user3@example.com") }
+
+      context "user has friend connections" do
+        it "returns the correct output" do
+          create(:friendship, user: user1, friend: user2)
+          create(:friendship, user: user1, friend: user3)
+
+          expect(user1.recipients_list).to eq([user2.email, user3.email])
+        end
+      end
+
+      context "user has subscriptions from other users" do
+        it "returns the correct output" do
+          create(:friendship, user: user1, friend: user2)
+          create(:subscription, requestor: user3, target: user1)
+
+          expect(user1.recipients_list).to eq([user2.email, user3.email])
+        end
+      end
+
+      context "user has been blocked by other users" do
+        it "returns the correct output" do
+          create(:friendship, user: user1, friend: user2)
+          create(:subscription, requestor: user3, target: user1)
+          create(:blocked_subscription, requestor: user2, target: user1)
+
+          expect(user1.recipients_list).to eq([user3.email])
+        end
+      end
+
+      context "has text_to_scan parameter included" do
+        it "returns the correct output" do
+          create(:friendship, user: user1, friend: user2)
+          create(:subscription, requestor: user3, target: user1)
+          create(:blocked_subscription, requestor: user2, target: user1)
+
+          text_to_scan = "Hello world kate@example.com test@example.com"
+          expect(user1.recipients_list(text_to_scan)).to eq([user3.email, "kate@example.com", "test@example.com"])
+        end
+      end
+    end
   end
 end

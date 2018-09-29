@@ -69,6 +69,20 @@ class Api::V1::FriendshipManagementController < ApplicationController
     end
   end
 
+  # GET /api/v1/friendship_management/recipients_list
+  def recipients_list
+    return render json: { success: false, messages: ["Invalid parameters given"] }, status: :bad_request if recipients_list_params[:sender].blank?
+
+    service = FriendshipManagement::RecipientsList.new(recipients_list_params)
+    service.run
+
+    if service.user.nil?
+      render json: { success: false, messages: ["User with given email does not exist"] }, status: :not_found
+    else
+      render json: { success: true, recipients: service.recipients_list }, status: :ok
+    end
+  end
+
   private
 
   def connect_friends_params
@@ -89,5 +103,9 @@ class Api::V1::FriendshipManagementController < ApplicationController
 
   def block_params
     params.permit(:requestor, :target)
+  end
+
+  def recipients_list_params
+    params.permit(:sender, :text)
   end
 end

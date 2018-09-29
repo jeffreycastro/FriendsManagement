@@ -7,6 +7,7 @@ Rails.application.routes.draw do
       get  '/friendship_management/common_friends_list', to: 'friendship_management#common_friends_list'
       post '/friendship_management/subscribe',           to: 'friendship_management#subscribe'
       post '/friendship_management/block',               to: 'friendship_management#block'
+      get  '/friendship_management/recipients_list',     to: 'friendship_management#recipients_list'
     end
   end
 end
