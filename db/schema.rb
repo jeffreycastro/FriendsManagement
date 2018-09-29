@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180927024029) do
+ActiveRecord::Schema.define(version: 20180929025942) do
 
   create_table "friendships", force: :cascade do |t|
     t.integer "user_id"
@@ -24,6 +24,7 @@ ActiveRecord::Schema.define(version: 20180927024029) do
   create_table "subscriptions", force: :cascade do |t|
     t.integer "requestor_id"
     t.integer "target_id"
+    t.boolean "blocked", default: false
     t.index ["requestor_id"], name: "index_subscriptions_on_requestor_id"
     t.index ["target_id"], name: "index_subscriptions_on_target_id"
   end
