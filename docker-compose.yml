@@ -1,0 +1,10 @@
+version: '3.4'
+
+services:
+  friendship_management:
+    build: .
+    container_name: friendship_management
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/app
