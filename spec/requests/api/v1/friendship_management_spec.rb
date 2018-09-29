@@ -395,23 +395,23 @@ RSpec.describe 'FriendshipManagement API v1', type: :request do
       context "requestor is already subscribed to the target" do
         let!(:user1) { create(:user, email: subscribe_params[:requestor]) }
         let!(:user2) { create(:user, email: subscribe_params[:target]) }
-        let!(:existing_sub) { create(:subscription, requestor: user1, target: user2) }
+        let!(:existing_sub) { create(:blocked_subscription, requestor: user1, target: user2) }
 
-        it "returns status code for :unprocessable_entity" do
+        it "returns status code for :ok" do
           post '/api/v1/friendship_management/subscribe', params: subscribe_params
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:ok)
         end
 
         it "returns the correct json response" do
           post '/api/v1/friendship_management/subscribe', params: subscribe_params
-          expect(JSON.parse(response.body)["success"]).to eq(false)
-          expect(JSON.parse(response.body)["messages"]).to include("already subscribed!")
+          expect(JSON.parse(response.body)["success"]).to eq(true)
         end
 
-        it "does not create a Subscription" do
-          expect {
-            post '/api/v1/friendship_management/subscribe', params: subscribe_params
-          }.to not_change(Subscription, :count)
+        it "updates the Subscription blocked value to false" do
+          expect(existing_sub.blocked).to eq(true)
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params
+          existing_sub.reload
+          expect(existing_sub.blocked).to eq(false)
         end
       end
 

@@ -48,7 +48,7 @@ class Api::V1::FriendshipManagementController < ApplicationController
     service = FriendshipManagement::Subscribe.new(subscribe_params)
     service.run
 
-    if service.subscription.persisted?
+    if service.subscription.try(:persisted?)
       render json: { success: true }, status: :ok
     else
       render json: { success: false, messages: service.flat_errors }, status: :unprocessable_entity

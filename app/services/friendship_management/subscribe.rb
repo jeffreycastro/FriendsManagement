@@ -8,8 +8,8 @@ class FriendshipManagement::Subscribe
     @errors << target.errors.full_messages unless target.persisted?
     return if @errors.any?
 
-    @subscription.requestor_id = requestor.id
-    @subscription.target_id    = target.id
+    @subscription = Subscription.find_or_initialize_by(requestor_id: requestor.id, target_id: target.id)
+    @subscription.blocked = false
     return if @subscription.save
 
     @errors << @subscription.errors.full_messages
@@ -24,7 +24,6 @@ class FriendshipManagement::Subscribe
   def initialize(params)
     @requestor    = params[:requestor]
     @target       = params[:target]
-    @subscription = Subscription.new
     @errors       = []
   end
 end
