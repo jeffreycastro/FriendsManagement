@@ -319,4 +319,139 @@ RSpec.describe 'FriendshipManagement API v1', type: :request do
       end
     end
   end
+
+  # Test suite for POST /api/v1/friendship_management/subscribe
+  describe 'POST /api/v1/friendship_management/subscribe' do
+    context "invalid request" do
+      context "no parameters given" do
+        before(:each) do
+          post '/api/v1/friendship_management/subscribe', params: {}
+        end
+
+        it "renders status code for :bad_request" do
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it "returns the correct json response" do
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("Invalid parameters given")
+        end
+      end
+    end
+
+    context "valid request" do
+      let!(:subscribe_params) {{ requestor: "user1@example.com", target: "user2@example.com" }}
+
+      it "calls on the FriendshipManagement::Subscribe service" do
+        expect(FriendshipManagement::Subscribe).to receive(:new).and_call_original
+        post '/api/v1/friendship_management/subscribe', params: subscribe_params
+      end
+
+      context "requestor is not yet subscribed to the target" do
+        it "creates a Subscription record" do
+          expect {
+            post '/api/v1/friendship_management/subscribe', params: subscribe_params
+          }.to change(Subscription, :count).by(1)
+          expect(Subscription.last.requestor.email).to eq(subscribe_params[:requestor])
+          expect(Subscription.last.target.email).to eq(subscribe_params[:target])
+        end
+
+        it "returns status code for :ok" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "returns the correct json response" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params
+          expect(JSON.parse(response.body)["success"]).to eq(true)
+        end
+      end
+
+      context "requestor is already subscribed to the target" do
+        let!(:user1) { create(:user, email: subscribe_params[:requestor]) }
+        let!(:user2) { create(:user, email: subscribe_params[:target]) }
+        let!(:existing_sub) { create(:subscription, requestor: user1, target: user2) }
+
+        it "returns status code for :unprocessable_entity" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+
+        it "returns the correct json response" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("already subscribed!")
+        end
+
+        it "does not create a Subscription" do
+          expect {
+            post '/api/v1/friendship_management/subscribe', params: subscribe_params
+          }.to not_change(Subscription, :count)
+        end
+      end
+
+      context "given email addresses are the same" do
+        let!(:subscribe_params_2) {{ requestor: "user1@example.com", target: "user1@example.com" }}
+
+        it "returns status code for :unprocessable_entity" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params_2
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+
+        it "returns the correct json response" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params_2
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("cannot subscribe to self!")
+        end
+
+        it "does not create a Subscription" do
+          expect {
+            post '/api/v1/friendship_management/subscribe', params: subscribe_params_2
+          }.to not_change(Subscription, :count)
+        end
+      end
+
+      context "one or more of the given email addresses have invalid format" do
+        let!(:subscribe_params_3) {{ requestor: "user1@example.com", target: "invalidemail" }}
+
+        it "returns status code for :unprocessable_entity" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params_3
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+
+        it "returns the correct json response" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params_3
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("Email has invalid format")
+        end
+
+        it "does not create a Subscription" do
+          expect {
+            post '/api/v1/friendship_management/subscribe', params: subscribe_params_3
+          }.to not_change(Subscription, :count)
+        end
+      end
+
+      context "one or more of the given email addresses are blank" do
+        let!(:subscribe_params_4) {{ requestor: "user1@example.com", target: "" }}
+
+        it "returns status code for :unprocessable_entity" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params_4
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+
+        it "returns the correct json response" do
+          post '/api/v1/friendship_management/subscribe', params: subscribe_params_4
+          expect(JSON.parse(response.body)["success"]).to eq(false)
+          expect(JSON.parse(response.body)["messages"]).to include("Email can't be blank")
+        end
+
+        it "does not create a Subsription" do
+          expect {
+            post '/api/v1/friendship_management/subscribe', params: subscribe_params_4
+          }.to not_change(Subscription, :count)
+        end
+      end
+    end
+  end
 end

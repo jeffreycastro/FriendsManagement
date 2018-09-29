@@ -5,6 +5,7 @@ Rails.application.routes.draw do
       post '/friendship_management/connect_friends',     to: 'friendship_management#connect_friends'
       get  '/friendship_management/friends_list',        to: 'friendship_management#friends_list'
       get  '/friendship_management/common_friends_list', to: 'friendship_management#common_friends_list'
+      post '/friendship_management/subscribe',           to: 'friendship_management#subscribe'
     end
   end
 end

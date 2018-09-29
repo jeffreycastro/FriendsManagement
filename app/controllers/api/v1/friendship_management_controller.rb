@@ -41,6 +41,20 @@ class Api::V1::FriendshipManagementController < ApplicationController
     end
   end
 
+  # POST /api/v1/friendship_management/subscribe
+  def subscribe
+    return render json: { success: false, messages: ["Invalid parameters given"] }, status: :bad_request if subscribe_params.blank?
+
+    service = FriendshipManagement::Subscribe.new(subscribe_params)
+    service.run
+
+    if service.subscription.persisted?
+      render json: { success: true }, status: :ok
+    else
+      render json: { success: false, messages: service.flat_errors }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def connect_friends_params
@@ -53,5 +67,9 @@ class Api::V1::FriendshipManagementController < ApplicationController
 
   def common_friends_list_params
     params.permit(friends: [])
+  end
+
+  def subscribe_params
+    params.permit(:requestor, :target)
   end
 end
